@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Threading.Tasks;
 using TweetBook2.Contracts.V1;
 using TweetBook2.Contracts.V1.Requests;
@@ -18,6 +19,13 @@ namespace TweetBook2.Controllers.V1
         [HttpPost(ApiRoutes.Identity.Register)]
         public async Task<IActionResult> Register([FromBody] UserRegistrationRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new AuthenFailedResponse {
+                    Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage))
+                });
+            }
+
             var registrationResult = await _identityService.RegisterAsync(request.Email, request.Password);
 
             if (!registrationResult.Success)
@@ -28,6 +36,29 @@ namespace TweetBook2.Controllers.V1
                 });
             }
             return Ok(new AuthenSuccessResponse { Token = registrationResult.Token});
+        }
+
+        [HttpPost(ApiRoutes.Identity.Login)]
+        public async Task<IActionResult> Login([FromBody] UserLoginRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new AuthenFailedResponse
+                {
+                    Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage))
+                });
+            }
+
+            var registrationResult = await _identityService.Login(request.Email, request.Password);
+
+            if (!registrationResult.Success)
+            {
+                return BadRequest(new AuthenFailedResponse
+                {
+                    Errors = registrationResult.Errors
+                });
+            }
+            return Ok(new AuthenSuccessResponse { Token = registrationResult.Token });
         }
     }
 }

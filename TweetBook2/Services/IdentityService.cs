@@ -42,7 +42,10 @@ namespace TweetBook2.Services
             {
                 return new AuthenticationResult { Errors = createduser.Errors.Select(x => x.Description) };
             }
-
+            return GenerateAuthenticationResultForUser(newUser);
+        }
+        private AuthenticationResult GenerateAuthenticationResultForUser(IdentityUser newUser)
+        {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
 
@@ -61,6 +64,26 @@ namespace TweetBook2.Services
             };
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return new AuthenticationResult { Success = true, Token = tokenHandler.WriteToken(token) };
+        }
+
+        public async Task<AuthenticationResult> Login(string email, string password)
+        {
+            var user = await _userManager.FindByNameAsync(email);
+
+            if (user == null)
+            {
+                return new AuthenticationResult
+                {
+                    Errors = new[] { "User does not exist" }
+                };
+            }
+
+            var userHasValidPassword = await _userManager.CheckPasswordAsync(user, password);
+            if (!userHasValidPassword)
+            {
+                return new AuthenticationResult { Errors = new[] { "Password is wrong" } };
+            }
+            return GenerateAuthenticationResultForUser(user);
         }
     }
 }
