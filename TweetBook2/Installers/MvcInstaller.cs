@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using TweetBook2.Option;
+using TweetBook2.Services;
 
 namespace TweetBook2.Installers
 {
@@ -18,6 +19,7 @@ namespace TweetBook2.Installers
             configuration.Bind(key: nameof(jwtSettings), jwtSettings);
             services.AddSingleton(jwtSettings);
 
+            services.AddScoped<IIdentityService, IdentityService>();
 
             services.AddAuthentication(options =>
             {
@@ -31,7 +33,11 @@ namespace TweetBook2.Installers
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key:Encoding.ASCII.GetBytes(jwtSettings.Secret))
+                    IssuerSigningKey = new SymmetricSecurityKey(key:Encoding.ASCII.GetBytes(jwtSettings.Secret)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    RequireExpirationTime = false,
+                    ValidateLifetime = true
                 };
             });
 
