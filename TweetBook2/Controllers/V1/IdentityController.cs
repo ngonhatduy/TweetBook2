@@ -21,7 +21,7 @@ namespace TweetBook2.Controllers.V1
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new AuthenFailedResponse {
+                return Unauthorized(new AuthenFailedResponse {
                     Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage))
                 });
             }
@@ -30,7 +30,7 @@ namespace TweetBook2.Controllers.V1
 
             if (!registrationResult.Success)
             {
-                return BadRequest(new AuthenFailedResponse
+                return Unauthorized(new AuthenFailedResponse
                 {
                     Errors = registrationResult.Errors
                 });
@@ -43,7 +43,7 @@ namespace TweetBook2.Controllers.V1
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new AuthenFailedResponse
+                return Unauthorized(new AuthenFailedResponse
                 {
                     Errors = ModelState.Values.SelectMany(x => x.Errors.Select(xx => xx.ErrorMessage))
                 });
@@ -53,7 +53,7 @@ namespace TweetBook2.Controllers.V1
 
             if (!registrationResult.Success)
             {
-                return BadRequest(new AuthenFailedResponse
+                return Unauthorized(new AuthenFailedResponse
                 {
                     Errors = registrationResult.Errors
                 });
