@@ -41,16 +41,12 @@ namespace TweetBook2.Installers
                 };
             });
 
+            services.AddAuthorization();
 
             services.AddControllersWithViews();
             services.AddSwaggerGen(x =>
             {
                 x.SwaggerDoc("v1", new OpenApiInfo { Title = "Tweetbook API", Version = "v1" });
-
-                //var security = new Dictionary<string, IEnumerable<string>>
-                //{
-                //    {"Bearer", new string[0] }
-                //};
 
                 x.AddSecurityDefinition(name: "Bearer", new OpenApiSecurityScheme
                 {

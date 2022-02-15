@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -15,6 +16,8 @@ namespace TweetBook2.Services
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly JwtSettings _jwtSettings;
+        //private readonly RoleManager<IdentityRole> _roleManager;
+
 
         public IdentityService(UserManager<IdentityUser> userManager, JwtSettings jwtSettings)
         {
@@ -33,32 +36,51 @@ namespace TweetBook2.Services
                     Errors = new[] { "User already existed" }
                 };
             }
-
-            var newUser = new IdentityUser { Email = email, UserName = email};
-
+            var newUserId = Guid.NewGuid();
+            var newUser = new IdentityUser {Id = newUserId.ToString(), Email = email, UserName = email};
             var createduser = await _userManager.CreateAsync(newUser, password);
 
             if (!createduser.Succeeded)
             {
                 return new AuthenticationResult { Errors = createduser.Errors.Select(x => x.Description) };
             }
-            return GenerateAuthenticationResultForUser(newUser);
+
+            await _userManager.AddToRoleAsync(newUser, "Admin");
+
+            return await GenerateAuthenticationResultForUserAsync(newUser);
         }
-        private AuthenticationResult GenerateAuthenticationResultForUser(IdentityUser newUser)
+        private async Task<AuthenticationResult> GenerateAuthenticationResultForUserAsync(IdentityUser newUser)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, newUser.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, newUser.Email),
+                new Claim("id", newUser.Id)
+            };
+
+            var userRoles = await _userManager.GetRolesAsync(newUser);
+            foreach (var userRole in userRoles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, userRole));
+                //var role = await _roleManager.FindByNameAsync(userRole);
+                //if (role == null) continue;
+                //var roleClaims = await _roleManager.GetClaimsAsync(role);
+
+                //foreach (var roleClaim in roleClaims)
+                //{
+                //    if (claims.Contains(roleClaim))
+                //        continue;
+
+                //    claims.Add(roleClaim);
+                //}
+            }
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(
-                    new[]
-                    {
-                        new Claim(JwtRegisteredClaimNames.Sub, newUser.Email),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                        new Claim(JwtRegisteredClaimNames.Email, newUser.Email),
-                        new Claim("id", newUser.Id),
-                    }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddHours(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
@@ -83,7 +105,7 @@ namespace TweetBook2.Services
             {
                 return new AuthenticationResult { Errors = new[] { "Password is wrong" } };
             }
-            return GenerateAuthenticationResultForUser(user);
+            return await GenerateAuthenticationResultForUserAsync(user);
         }
     }
 }

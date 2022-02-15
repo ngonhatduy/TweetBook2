@@ -21,6 +21,7 @@ namespace TweetBook2.Controllers.V1
             _postService = postService;
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet(ApiRoutes.Posts.GetAll)]
         public async Task<IActionResult> GetAll()
         {
